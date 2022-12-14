@@ -1,0 +1,251 @@
+﻿
+
+<div class="row clearfix">
+    <div class="col-lg-12">
+        <div class="card chat-app">
+            <div id="plist" class="people-list">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-search"></i></span>
+                    </div>
+                    <input type="text" class="form-control" placeholder="Search...">
+                </div>
+                <ul class="list-unstyled chat-list mt-2 mb-0">
+                    @foreach (var item in (List<User>)ViewBag.OtherUsers)
+                    {
+                        
+                        <li class="clearfix" id="@item.Username">
+                            <a href="?userTarget=@item.Username">
+                                <img src="https://bootdey.com/img/Content/avatar/@item.Photo" alt="avatar">
+                                <div class="about">
+                                    <div class="name">@item.Fullname</div>
+                                    <div class="status"> <i class="fa fa-circle offline"></i> left 7 mins ago </div>
+                                </div>
+                            </a>
+
+                        </li>
+                    }
+                    
+                </ul>
+            </div>
+            <div class="chat">
+                <div class="chat-header clearfix">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            @if (!string.IsNullOrEmpty(ViewBag.PhotoTarget))
+                            {
+                                <a href="javascript:void(0);" data-toggle="modal" data-target="#view_info">
+                                    <img src="https://bootdey.com/img/Content/avatar/@ViewBag.PhotoTarget" alt="avatar">
+                                </a>
+                            }
+                            
+                            <div class="chat-about">
+                                <h6 class="m-b-0">@ViewBag.FullnameTarget</h6>
+                                <small>Online</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 hidden-sm text-right">
+                            <a href="javascript:void(0);" class="btn btn-outline-secondary"><i class="fa fa-camera"></i></a>
+                            <a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-image"></i></a>
+                            <a href="javascript:void(0);" class="btn btn-outline-info"><i class="fa fa-cogs"></i></a>
+                            <a href="javascript:void(0);" class="btn btn-outline-warning"><i class="fa fa-question"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-history">
+                    <ul class="m-b-0" id="chat-history-ul">
+
+                        @if (ViewBag.Chat != null)
+                        {
+                            @foreach (var item in ViewBag.Chat)
+                            {
+                                if (item.Position == "right")
+                                {
+                                    <li class="clearfix">
+                                        <div class="message-data text-right">
+                                            @if (item.SentDate.Day == DateTime.Today.Day)
+                                                {
+                                                    <span class="message-data-time" style="font-size:12px">
+                                                        Today, @item.SentDate.ToString("h:mm tt")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="message-data-time" style="font-size:12px">
+                                                        @item.SentDate.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                    </span>
+                                                    
+                                                }
+                                        </div>
+                                        <div class="message other-message float-right"> @item.Message </div>
+
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="clearfix">    
+                                        <div class="message-data">
+                                            
+                                                @if (item.SentDate.Day == DateTime.Today.Day)
+                                                {
+                                                    <span class="message-data-time" style="font-size:12px">
+                                                        Today, @item.SentDate.ToString("h:mm tt")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="message-data-time" style="font-size:12px">
+                                                        @item.SentDate.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                    </span>
+                                                    
+                                                }
+                                                     
+                                        </div>
+                                        <div class="message my-message">@item.Message</div>
+                            
+                                    </li>
+                                }
+                            }
+                        }
+
+                        
+
+                        
+                    </ul>
+                </div>
+                <div class="chat-message clearfix">
+                    <div class="input-group mb-0">
+                        <div class="input-group-prepend chat-message-button-send">
+                            <button class="input-group-text" id="btn-send-message" type="button"><i class="fa fa-send"></i></button>
+                        </div>
+                        <input type="text" class="form-control chat-message-button-send" id="text-message" placeholder="Enter text here...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="~/css/chat.css" rel="stylesheet" />
+
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+
+<script>
+
+    $(function () {
+        debugger;
+        let userTarget = getQueryString("userTarget");
+        let hubUrl = `/chatHub?userTarget=${userTarget}`;
+
+        var connection = new signalR.HubConnectionBuilder().withUrl(hubUrl).build();
+
+        $('#btn-send-message').prop("disabled", true);
+
+        connection.on("ReceiveMessage", function (userSender, message, sentDate) {
+            debugger;
+
+            if (userSender != userTarget)
+            {
+                $("#chat-history-ul")
+                .append(`<li class="clearfix">
+                            <div class="message-data text-right">
+                                        <span class="message-data-time" style="font-size:12px">${sentDate}</span>
+                            </div>
+                            <div class="message other-message float-right"> ${message} </div>
+                        </li>`);
+            }
+            else
+            {
+                $("#chat-history-ul")
+                .append(`<li class="clearfix">
+                            <div class="message-data">
+                                        <span class="message-data-time" style="font-size:12px">${sentDate}</span>
+                            </div>
+                            <div class="message my-message">${message}</div>
+                         </li>`);
+            }
+
+            
+        });
+
+        connection.start().then(function () {
+            $('#btn-send-message').prop("disabled", false);
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        
+
+        if (userTarget !== undefined) {
+           $(`#${userTarget}`).addClass('active');
+           $(`#${userTarget}`).siblings().removeClass('active');
+        }
+
+        showhideMessageText(userTarget);
+
+        $("li").on("click", function () {
+            // perform a href to do click event
+            $(`#${this.id}`).children()[0].click();
+        });
+
+        $('#btn-send-message').click(function(event){
+            postMessage();
+            event.preventDefault();
+        });
+
+    });
+
+    function postMessage() {
+        var message = $('#text-message').val();
+        var receiver = getQueryString("userTarget");
+
+        var formData = { 'receiver': receiver, 'message': message };
+
+        //// call to controller api
+        $.ajax({
+            url: "BroadcastChat/PostMessage",
+            type: "POST",
+            data: JSON.stringify(formData),
+            contentType: 'application/json; charset=UTF-8',
+            success: function (data, textStatus, jqXHR) {
+                debugger;
+                $('#text-message').val('')
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                debugger
+            }
+        });
+
+        //// call to hub
+        //connection.invoke("SendMessageToGroup", receiver, message).catch(function (err) {
+        //    return console.error(err.toString());
+        //});
+    }
+
+    function showhideMessageText(userTarget) {
+        debugger;
+        if (userTarget === undefined) {
+            $('.chat-message-button-send').hide();
+        } else {
+            $('.chat-message-button-send').show();
+        }
+        
+    }
+
+    function getQueryString(search) {
+        debugger;
+        var url = document.location.href;
+        var qs = url.substring(url.indexOf('?') + 1).split('&');
+       
+        for (var i = 0, result = {}; i < qs.length; i++) {
+            qs[i] = qs[i].split('=');
+            result[qs[i][0]] = decodeURIComponent(qs[i][1]);
+        }
+
+        debugger;
+        if (result.length < 1)
+            return undefined;
+
+        return result[search];
+    }
+</script>
